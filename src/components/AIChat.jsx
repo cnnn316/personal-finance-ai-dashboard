@@ -3,7 +3,7 @@ import { MessageSquare, X, Send, Key, Loader2 } from 'lucide-react';
 
 export default function AIChat({ contextData }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
+  const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || '');
   const [isKeySaved, setIsKeySaved] = useState(!!apiKey);
   const [messages, setMessages] = useState([{
     role: 'assistant',
@@ -50,14 +50,16 @@ You have access to the user's current financial data. Use this data to answer th
 Current Financial Data in JSON format:
 ${JSON.stringify(contextData, null, 2)}`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': window.location.href, // Recommended for OpenRouter
+          'X-Title': 'Personal Finance Dashboard' // Recommended for OpenRouter
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'openai/gpt-4o-mini', // Update model to an OpenRouter compatible string
           messages: [
             { role: 'system', content: systemPrompt },
             ...messages.filter(m => m.role !== 'error').map(m => ({ role: m.role, content: m.content })),
@@ -70,7 +72,7 @@ ${JSON.stringify(contextData, null, 2)}`;
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || 'Failed to communicate with OpenAI');
+        throw new Error(data.error?.message || 'Failed to communicate with OpenRouter API');
       }
 
       setMessages(prev => [...prev, {
@@ -134,7 +136,7 @@ ${JSON.stringify(contextData, null, 2)}`;
         {!isKeySaved ? (
           <div className="card" style={{ padding: '1.5rem', textAlign: 'center' }}>
             <Key size={32} color="var(--accent-warning)" style={{ marginBottom: '1rem' }} />
-            <h4 style={{ marginBottom: '0.5rem' }}>OpenAI API Key Required</h4>
+            <h4 style={{ marginBottom: '0.5rem' }}>OpenRouter API Key Required</h4>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Your key is stored locally in your browser and never sent to our servers.
             </p>
